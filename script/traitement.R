@@ -168,6 +168,8 @@ surfaces_ra1852_geo <-
     crs = 4326
   )
 
+surfaces$canton[! (surfaces$canton %in% surfaces_ra1852_geo$canton)]
+
 # # on charge la projection pour le mettre en Lambert-93
 surfaces_ra1852_geo <- st_transform(surfaces_ra1852_geo, crs = 2154)
 
@@ -195,4 +197,16 @@ plot(dep_union)
 voronoi_surfaces_ra1852 = st_intersection(voronoi_surfaces_ra1852, dep_union)
 plot(voronoi_surfaces_ra1852)
 
+
+data_geo <- data_frame(id=1:length(voronoi_surfaces_ra1852))
+data_geo<-bind_cols(voronoi_surfaces_ra1852,data_geo)
+data_geo <- st_as_sf(data_geo)
+
+class(surfaces_ra1852_geo)
+
+surfaces_ra1852_geo <- st_transform(surfaces_ra1852_geo, crs = 2154)
+data_carto <- data_geo %>% 
+  st_join(surfaces_ra1852_geo)
+
+class(data_carto)
 
