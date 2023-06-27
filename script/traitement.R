@@ -150,4 +150,49 @@ for (i in 1:nrow(surfaces)){
 }
                     
 
+# Carte
+
+map_leaflet <- leaflet(surfaces) %>%
+  addProviderTiles(providers$Stamen.Toner) %>%
+  setView(lng = 2.80, lat = 46.80, zoom = 5) %>%
+  addMarkers(~coordonnees_x, ~coordonnees_y,label=~as.character(canton))
+map_leaflet
+
+
+
+# pour travailler sur des aspects géographiques dont les voronoi il faut passer du dataframe au géo dataframe
+surfaces_ra1852_geo <-
+  st_as_sf(
+    surfaces %>% drop_na(c(coordonnees_x, coordonnees_y)),
+    coords = c("coordonnees_x", "coordonnees_y"),
+    crs = 4326
+  )
+
+# # on charge la projection pour le mettre en Lambert-93
+surfaces_ra1852_geo <- st_transform(surfaces_ra1852_geo, crs = 2154)
+
+# # On utilise les fonctions de sf
+voronoi_surfaces_ra1852 <- surfaces_ra1852_geo %>%
+  st_union() %>% ## permet de passer une simple à un seul objet géométrique avec tous les points
+  st_voronoi() %>% ## calcul du voronoi
+  st_collection_extract()  ## extraction en une liste avec les 363 figures géométriques
+
+# # Visualisation simple
+plot(voronoi_surfaces_ra1852)
+
+dep <- sf::read_sf(here('data/dep2021_simplify2.json'), crs=2154) 
+### enlever outre-mer
+dep_metro <- dep %>% 
+  rowwise() %>% 
+  filter(nchar(dep)==2) %>% 
+  ungroup()
+
+### ne garder que les coutours de la France
+dep_union <- st_union(dep_metro)
+plot(dep_union)
+
+### ne garder les voronoi uniquement qui sont en intersection avece les contours de la France
+voronoi_surfaces_ra1852 = st_intersection(voronoi_surfaces_ra1852, dep_union)
+plot(voronoi_surfaces_ra1852)
+
 
