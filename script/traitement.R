@@ -75,6 +75,79 @@ surf_cereales_romoratin <- fichier_descriptif %>%
   full_join(test, by=c("NUMERO.VARIABLE"="canton")) %>% 
   summarise(surf=sum(ROMORANTIN[INTITULE1=="nombre d'hectares cultivés en 1852"],na.rm=T))
 
+
+
+## Partie 2 : API
+
+# Pour commencer, regardons comment marche l'api. Nous vous proposons de consulter le site : <https://geo.api.gouv.fr/decoupage-administratif/communes>
+
+
+url = "https://geo.api.gouv.fr/communes?nom=%s&codeDepartement=%s&fields=centre&boost=population&limit=1"
+url_sans_departement = "https://geo.api.gouv.fr/communes?nom=%s&fields=centre&boost=population&limit=1"
+
+# On utilise la fonction sprintf qui prend une chaine de caractères 'url' et qui va remplacer les %s par les paramètres passées ensuite dans l'ordre. Le premier %s est remplacé par "Toulouse), le second par "31"
+url_completed <- sprintf(url, "Toulouse", "31")
+
+# on interroge l'API qui est renvoit un JSON qui est convertie en dataframe grâce à la fonction fromJSON
+resultat <-  fromJSON(url_completed)
+print(resultat)
+print(resultat$centre)
+
+
+surfaces_ra <- surfaces_ra1852 %>% 
+  filter(!is.na(departement))
+
+library(stringi)
+#récupérer la liste des codes départements
+liste_dep <- fromJSON("https://geo.api.gouv.fr/departements")
+liste_dep2 <- liste_dep %>%
+  mutate(dep_sans_accent=stri_trans_general(str = nom, 
+                                            id = "Latin-ASCII"),
+         dep=toupper(dep_sans_accent)) %>%
+  select(code, dep)
+
+
+  
+surfaces <- surfaces_ra %>%
+  rename(code_canton = code) %>%
+  left_join(liste_dep2, by=c("departement" = "dep")) %>%
+  mutate(coordonnees_x = 0, coordonnees_y = 0)
+  
+
+surfaces$canton <- str_replace_all(string=surfaces$canton, pattern = " ", "%20")
+
+surfaces[surfaces$canton=="LA%20PALISSE","canton"]<-"LAPALISSE"
+surfaces[surfaces$canton=="PONTS%20L'EVEQUE","canton"]<-"PONT%20L'EVEQUE"
+surfaces[surfaces$canton=="ISSINGEAUX","canton"]<-"YSSINGEAUX"
+surfaces[surfaces$canton=="CHALONS%20SUR%20MARNE","canton"]<-"CHALONS%20EN%20CHAMPAGNE"
+surfaces[surfaces$canton=="NAPOLEONVILLE","canton"]<-"PONTIVY"
+surfaces[surfaces$canton=="BRIEY","code"]<-NA
+surfaces[surfaces$canton=="SCHLESTADT","canton"]<-"SELESTAT"
+surfaces[surfaces$canton=="CASTEL%20SARRASIN","canton"]<-"CASTEL-SARRAZIN"
+surfaces[surfaces$canton=="GRASSE","code"] <- NA
+surfaces[surfaces$canton=="NAPOLEON%20VENDEE","canton"]<-"LA%20ROCHE-SUR-YON"
+surfaces[surfaces$canton=="REMIRMONT","canton"]<-"REMIREMONT"
+
+
+
+  
+
+  
+for (i in 1:nrow(surfaces)){
+  
+    if (!is.na(surfaces[i,"code"])){
+      url_completed <- sprintf(url, surfaces[i,"canton"], surfaces[i,"code"])
+    } else {
+      url_completed <- sprintf(url_sans_departement, surfaces[i,"canton"])
+    }
+  
+  resultat <-  fromJSON(url_completed)
+  print(surfaces[i,"canton"])
+  print(resultat$centre$coordinates)
+  surfaces[i,"coordonnees_x"] <- unlist(resultat$centre$coordinates)[1]
+  surfaces[i,"coordonnees_y"] <- unlist(resultat$centre$coordinates)[2]
+  
+}
                     
 
 
