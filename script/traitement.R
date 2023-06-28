@@ -197,12 +197,116 @@ plot(dep_union)
 voronoi_surfaces_ra1852 = st_intersection(voronoi_surfaces_ra1852, dep_union)
 plot(voronoi_surfaces_ra1852)
 
-
+##################################
 #créer contour voronoi sous contrainte de respecter les limites départementales
 
-#test avec le finistère
-data_finistere <- surfaces_ra1852_geo %>% filter(departement=="FINISTERE")
+#ajout des départements non connus
+surfaces_ra1852_geo_complet <-surfaces_ra1852_geo
+surfaces_ra1852_geo_complet <- surfaces_ra1852_geo_complet %>%
+  mutate(code= case_when(departement=="BASSES ALPES" ~ "04"
+                         ,departement=="HAUTES ALPES" ~ "05"
+                         ,departement=="BOUCHES DU RHONE" ~ "13"
+                         ,departement=="CHARENTE INFERIEURE" ~ "17"
+                         ,canton=="BASTIA" ~ "2B"
+                         ,canton=="AJACCIO" ~ "2A"
+                         ,canton=="CALVI" ~ "2B"
+                         ,canton=="CORTE" ~ "2B"
+                         ,canton=="SARTENE" ~ "2A"
+                         ,departement=="COTE D'OR" ~ "21"
+                         ,departement=="COTES DU NORD" ~ "22"
+                         ,departement=="EURE ET LOIR" ~ "28"
+                         ,departement=="HAUTE GARONNE" ~ "31"
+                         ,departement=="ILLE ET VILAINE" ~ "35"
+                         ,departement=="INDRE ET LOIRE" ~ "37"
+                         ,departement=="LOIR ET CHER" ~ "41"
+                         ,departement=="HAUTE LOIRE" ~ "43"
+                         ,departement=="LOIRE INFERIEURE" ~ "44"
+                         ,departement=="LOT ET GARONNE" ~ "47"
+                         ,departement=="MAINE ET LOIRE" ~ "49"
+                         ,departement=="HAUTE MARNE" ~ "52"
+                         ,departement=="MEURTHE" ~ "54"
+                         ,departement=="MOSELLE" ~ "54"
+                         ,departement=="PAS DE CALAIS" ~ "62"
+                         ,departement=="PUY DE DOME" ~ "63"
+                         ,departement=="BASSES PYRENEES" ~ "64"
+                         ,departement=="HAUTES PYRENEES" ~ "65"
+                         ,departement=="PYRENEES ORIENTALES" ~ "66"
+                         ,departement=="BAS RHIN" ~ "67"
+                         ,departement=="HAUT RHIN" ~ "68"
+                         ,departement=="HAUTE SAONE" ~ "70"
+                         ,departement=="SAONE ET LOIRE" ~ "71"
+                         ,departement=="SEINE" ~ "75"
+                         ,departement=="SEINE INFERIEURE" ~ "76"
+                         ,departement=="SEINE ET MARNE" ~ "77"
+                         ,canton=="CORBEIL" ~ "91"
+                         ,canton=="ETAMPES" ~ "91"
+                         ,canton=="MANTES" ~ "78"
+                         ,canton=="PONTOISE" ~ "95"
+                         ,canton=="RAMBOUILLET" ~ "78"
+                         ,canton=="VERSAILLES" ~ "78"
+                         ,departement=="DEUX SEVRES" ~ "79"
+                         ,departement=="TARN ET GARONNE" ~ "82"
+                         ,departement=="VAR" ~ "83"
+                         ,departement=="HAUTE VIENNE" ~ "87"
+                         , TRUE ~code))
 
+# surf_sans_dep <- surfaces_ra1852_geo_complet %>% select (departement, code) %>% filter(is.na(code))
+
+  
+
+
+#test avec le finistère
+# data_finistere <- surfaces_ra1852_geo %>% filter(code=="29")
+# voronoi_surfaces_ra1852_finistere <- data_finistere %>%
+#   st_union() %>% ## permet de passer une simple à un seul objet géométrique avec tous les points
+#   st_voronoi() %>% ## calcul du voronoi
+#   st_collection_extract()
+# 
+# plot(voronoi_surfaces_ra1852_finistere)
+# 
+# dep_finistere <- dep %>% filter (dep=="29")
+# dep_union_finistere <- st_union(dep_finistere)
+# 
+# plot(dep_union_finistere)
+# 
+# voronoi_surfaces_ra1852_finistere = st_intersection(voronoi_surfaces_ra1852_finistere, dep_union_finistere)
+# plot(voronoi_surfaces_ra1852_finistere)
+
+#voronoi sur chaque departement
+distinct_dep <-  unlist(surfaces_ra1852_geo_complet %>% distinct(code))
+voronoi_tronque <- vector("list", 1)
+for (codeDep in distinct_dep){
+  print(codeDep)
+  data_dep <- surfaces_ra1852_geo_complet %>% filter(code==codeDep)
+  voronoi_surfaces_ra1852_dep <- data_dep %>%
+    st_union() %>% ## permet de passer une simple à un seul objet géométrique avec tous les points
+    st_voronoi() %>% ## calcul du voronoi
+    st_collection_extract()
+
+  # plot(voronoi_surfaces_ra1852_finistere)
+
+  contour_dep <- dep %>% filter (dep==codeDep)
+  contour_dep_union <- st_union(contour_dep)
+
+  # plot(dep_union_finistere)
+
+  voronoi_surfaces_ra1852_dep = st_intersection(voronoi_surfaces_ra1852_dep, contour_dep_union)
+  # plot(voronoi_surfaces_ra1852_finistere)
+
+  voronoi_tronque <-append(voronoi_tronque,voronoi_surfaces_ra1852_dep)
+  
+}
+voronoi_tronque_2<-voronoi_tronque[-1]
+
+voronoi_tronque_3 <-
+  st_as_sfc(
+    voronoi_tronque_2,
+    coords = c("coordonnees_x", "coordonnees_y"),
+    crs = 2154
+  )
+plot(voronoi_tronque_3)
+
+##################################
 
 data_geo <- data_frame(id=1:length(voronoi_surfaces_ra1852))
 data_geo<-bind_cols(voronoi_surfaces_ra1852,data_geo)
