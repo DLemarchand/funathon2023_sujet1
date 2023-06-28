@@ -197,6 +197,25 @@ plot(dep_union)
 voronoi_surfaces_ra1852 = st_intersection(voronoi_surfaces_ra1852, dep_union)
 plot(voronoi_surfaces_ra1852)
 
+
+
+data_geo <- data_frame(id=1:length(voronoi_surfaces_ra1852))
+data_geo<-bind_cols(voronoi_surfaces_ra1852,data_geo)
+data_geo <- st_as_sf(data_geo)
+
+
+surfaces_ra1852_geo <- st_transform(surfaces_ra1852_geo, crs = 2154)
+data_carto <- data_geo %>% 
+  st_join(surfaces_ra1852_geo)
+
+carte_canton_sans_contrainte <- data_carto %>% 
+  ggplot() +
+  geom_sf(color="grey",size=.2)+
+  geom_sf(data = dep_metro, linetype="dotted", color = "red", fill = NA) +
+  theme_map()
+carte_canton_sans_contrainte
+
+
 ##################################
 #créer contour voronoi sous contrainte de respecter les limites départementales
 
@@ -306,28 +325,25 @@ voronoi_tronque_3 <-
   )
 plot(voronoi_tronque_3)
 
-##################################
-
-data_geo <- data_frame(id=1:length(voronoi_surfaces_ra1852))
-data_geo<-bind_cols(voronoi_surfaces_ra1852,data_geo)
-data_geo <- st_as_sf(data_geo)
-
-class(surfaces_ra1852_geo)
-
-surfaces_ra1852_geo <- st_transform(surfaces_ra1852_geo, crs = 2154)
-data_carto <- data_geo %>% 
+data_geo_tronque <- data_frame(id=1:length(voronoi_tronque_3))
+data_geo_tronque<-bind_cols(voronoi_tronque_3,data_geo_tronque)
+data_geo_tronque <- st_as_sf(data_geo_tronque)
+data_carto_tronque <- data_geo_tronque %>% 
   st_join(surfaces_ra1852_geo)
 
-class(data_carto)
 
-
-
-carto_terres_labourables_par_canton <- data_carto %>% 
-  mutate(part_labourable = round(100 * total_des_terres_labourables/superficie_totale, -1)) %>% 
+carte_canton_avec_contrainte_dep <- data_carto_tronque %>% 
   ggplot() +
-  geom_sf(aes(fill = part_labourable),color="grey",size=.2)+
+  geom_sf(color="grey",size=.2)+
   scale_fill_gradient(name = "Part des terres\nlabourables en % \nde la surface totale", limits = c(0, 100), 
                       low = "white", high = "forestgreen") +
+  geom_sf(data = dep_metro, linetype="dotted", color = "red", fill = NA) +
   theme_map()
-carto_terres_labourables_par_canton
+carte_canton_avec_contrainte_dep
+
+
+
+
+
+
 
