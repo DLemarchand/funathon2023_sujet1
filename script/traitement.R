@@ -198,6 +198,12 @@ voronoi_surfaces_ra1852 = st_intersection(voronoi_surfaces_ra1852, dep_union)
 plot(voronoi_surfaces_ra1852)
 
 
+#créer contour voronoi sous contrainte de respecter les limites départementales
+
+#test avec le finistère
+data_finistere <- surfaces_ra1852_geo %>% filter(departement=="FINISTERE")
+
+
 data_geo <- data_frame(id=1:length(voronoi_surfaces_ra1852))
 data_geo<-bind_cols(voronoi_surfaces_ra1852,data_geo)
 data_geo <- st_as_sf(data_geo)
@@ -209,4 +215,15 @@ data_carto <- data_geo %>%
   st_join(surfaces_ra1852_geo)
 
 class(data_carto)
+
+
+
+carto_terres_labourables_par_canton <- data_carto %>% 
+  mutate(part_labourable = round(100 * total_des_terres_labourables/superficie_totale, -1)) %>% 
+  ggplot() +
+  geom_sf(aes(fill = part_labourable),color="grey",size=.2)+
+  scale_fill_gradient(name = "Part des terres\nlabourables en % \nde la surface totale", limits = c(0, 100), 
+                      low = "white", high = "forestgreen") +
+  theme_map()
+carto_terres_labourables_par_canton
 
