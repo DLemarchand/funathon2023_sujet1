@@ -343,6 +343,16 @@ carte_canton_avec_contrainte_dep
 
 
 
+carte_sans_dep <- data_carto %>% 
+  ggplot() +
+  geom_sf(color="grey",size=.2)+
+  scale_fill_gradient(name = "Part des terres\nlabourables en % \nde la surface totale", limits = c(0, 100), 
+                      low = "white", high = "forestgreen") +
+  theme_map()
+carte_sans_dep
+
+
+
 
 
 
